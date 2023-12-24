@@ -82,6 +82,7 @@ handler._check.post = (requestProperties, callback) => {
                       userObj.checks.push(checkId);
                       data.update('users', userPhone, userObj, (err3) => {
                         if (!err3) {
+                          // return data about the new check
                           callback(200, checkObj);
                         } else {
                           callback(502, { error: 'There is a problem in the server side!' });
@@ -215,7 +216,55 @@ handler._check.put = (requestProperties, callback) => {
 
 // @TODO: Authentication
 handler._check.delete = (requestProperties, callback) => {
-
+  const id = typeof requestProperties.queryStringObject.id === 'string' && requestProperties.queryStringObject.id.trim().length === 20 ? requestProperties.queryStringObject.id : false;
+  if (id) {
+    const token = typeof requestProperties.headerObj.token === 'string' ? requestProperties.headerObj.token : false;
+    data.read('tokens', token, (err, tokenData) => {
+      if (!err && tokenData) {
+        const userPhone = parseJSON(tokenData).phone;
+        tokenHandler._token.verify(token, userPhone, (isValid) => {
+          if (isValid) {
+            data.delete('checks', id, (err1) => {
+              if (!err1) {
+                data.read('users', userPhone, (err2, userData) => {
+                  if (!err2 && userData) {
+                    const uData = parseJSON(userData);
+                    // instanceof operator
+                    const userChecks = typeof uData.checks === 'object' && uData.checks instanceof Array ? uData.checks : [];
+                    const indexOfCheck = userChecks.indexOf(id);
+                    if (indexOfCheck > -1) {
+                      // at position x, remove 1 element
+                      userChecks.splice(indexOfCheck, 1);
+                      uData.checks = userChecks;
+                      data.update('users', userPhone, uData, (err3) => {
+                        if (!err3) {
+                          callback(200);
+                        } else {
+                          callback(503);
+                        }
+                      });
+                    } else {
+                      callback(502);
+                    }
+                  } else {
+                    callback(501);
+                  }
+                });
+              } else {
+                callback(500);
+              }
+            });
+          } else {
+            callback(403);
+          }
+        });
+      } else {
+        callback(501);
+      }
+    });
+  } else {
+    callback(404, { error: 'You have a problem in your request' });
+  }
 };
 
 //

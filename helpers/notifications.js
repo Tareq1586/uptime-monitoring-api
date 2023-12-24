@@ -1,4 +1,11 @@
-//
+/**
+ * Title: Notifications library
+ * Description: Important functions to notify users
+ * Author: Md. Tareq Munawar
+ * Date: 12/17/23
+ *
+ */
+
 const https = require('https');
 const querystring = require('querystring');
 const { twilio } = require('./environments');
@@ -42,4 +49,6 @@ notifications.sendTwilioSms = (phone, msg, callback) => {
     callback('Given parameters were missing or invalid!');
   }
 };
+
+// export the object
 module.exports = notifications;
